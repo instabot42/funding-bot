@@ -1,0 +1,35 @@
+{
+  "name": "funding-bot",
+  "version": "0.0.0",
+  "license": "MIT",
+  "keywords": [
+    "Bitcoin",
+    "Bitfinex",
+    "Funding"
+  ],
+  "description": "Funding bot for Bitfinex",
+  "author": {
+    "name": "Instabot"
+  },
+  "main": "app.js",
+  "scripts": {
+    "start": "node app",
+    "setup": "cp -n config/default.json config/local.json || true"
+  },
+  "dependencies": {
+    "bfx-api-node-models": "^1.0.6",
+    "bitfinex-api-node": "^2.0.4",
+    "body-parser": "^1.18.2",
+    "config": "^2.0.1",
+    "terminal-kit": "^1.14.3"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^4.17.0",
+    "eslint-config-airbnb-base": "^11.3.2",
+    "eslint-plugin-import": "^2.7.0",
+    "istanbul": "1.1.0-alpha.1",
+    "mocha": "^5.2.0",
+    "sinon": "^7.2.2"
+  }
+}

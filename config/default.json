@@ -1,0 +1,23 @@
+{
+  "credentials": {
+    "key": "api-key",
+    "secret": "api-secret"
+  },
+  "funding": [
+    {
+      "symbol": "btc",
+      "frrMultipleLow": 0.5,
+      "frrMultipleHigh": 5.0,
+      "atLeastLow": 0.0,
+      "atLeastHigh": 0.1,
+      "lendingPeriodLow": 0.01,
+      "lendingPeriodHigh": 0.1,
+      "minOrderSize": 0.002,
+      "orderCount": 10
+    }
+  ],
+  "server": {
+    "logLevel": 1,
+    "updateIntervalMinutes": 60
+  }
+}
