@@ -3,6 +3,7 @@ const logger = require('./common/logger').logger;
 const Bitfinex = require('./exchange/bitfinexv2');
 const scaledPrices = require('./common/scaled_prices');
 const util = require('./common/util');
+const callWebhook = require('./notifications/webhook');
 
 const startTime = new Date();
 const fundingMarkets = config.get('funding');
@@ -59,17 +60,17 @@ async function rebalanceFunding(options) {
 
     // Cancel existing offers
     logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
-    logger.progress('Cancelling existing open offers');
+    logger.progress('  Cancelling existing open offers');
     bfx.cancelAllOffers(symbol);
 
     // wait for the dust to settle
-    logger.progress('waiting...');
+    logger.progress('  waiting...');
     await sleep(options.sleep);
 
     // work out funds available
     const available = bfx.fundsAvailable(symbol);
     if (available < options.minOrderSize) {
-        logger.info(`Not enough ${symbol} - ${available} available`);
+        logger.info(`  Not enough ${symbol} - ${available} available`);
         return;
     }
 
@@ -77,8 +78,8 @@ async function rebalanceFunding(options) {
     const idealOrderCount = options.orderCount;
     const perOrder = util.roundDown(Math.max(available / idealOrderCount, options.minOrderSize), 5);
     const orderCount = Math.floor(available / perOrder);
-    logger.progress(`Adding ${orderCount} orders, per order: ${perOrder}`);
-    logger.progress(`Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}%.`);
+    logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}`);
+    logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}%.`);
 
     // Use a non-linear scaled order to position all the offers
     const rates = scaledPrices(orderCount, lowRate, highRate, 0, 'easeincubic', i => util.round(i, 8));
@@ -88,7 +89,39 @@ async function rebalanceFunding(options) {
         bfx.newOffer(symbol, perOrder, rate, days);
     });
 
-    logger.progress(`${symbol} orders updated`);
+    // reset the highs so alerts can retrigger
+    bfx.resetFundingRateHigh();
+}
+
+/**
+ * Called when there is a new high in the funding rate
+ * @param symbol
+ * @param oldRate
+ * @param newRate
+ */
+function fundingRateAlerts(symbol, oldRate, newRate) {
+    // See if they have a webhook url defined
+    const webhook = config.get('server.alertWebhook');
+    if (!webhook) {
+        return;
+    }
+
+    // Any alert levels configured for this market
+    const options = fundingMarkets.find(market => market.symbol === symbol);
+    if (!options.alerts) {
+        return;
+    }
+
+    // See if we've crossed over the alert threshold
+    options.alerts.forEach((alert) => {
+        const rate = alert.rate / 100;
+        if (newRate > rate && oldRate < rate) {
+            logger.error(`Alert fired - rates crossed over ${alert.rate}%`);
+            logger.error(alert.alertMessage);
+
+            callWebhook(webhook, alert.alertMessage);
+        }
+    });
 }
 
 /**
@@ -101,11 +134,14 @@ function runBot() {
     logger.debug('waiting a few seconds for connection to stabilise before starting...');
 
     fundingMarkets.forEach((options, i) => {
-        setTimeout(() => {
+        sleep(10 * i).then(() => {
             rebalanceFunding(options);
             setInterval(() => { rebalanceFunding(options); }, 1000 * 60 * waitMinutes);
-        }, 10000 * (i + 1));
+        });
     });
+
+    // Listen out for funding rate highs
+    bfx.onFundingRateHigh(fundingRateAlerts);
 }
 
 /** ************************************************************ */
@@ -124,5 +160,7 @@ logger.results(`\nStarted at ${startTime}\n`);
 // start the socket connections
 bfx.init(symbols);
 
-// Actually refresh all our funding ever N minutes
-runBot();
+// Wait 5 seconds for the socket connection to settle
+sleep(5).then(() => {
+    runBot();
+});

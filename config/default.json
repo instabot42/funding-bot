@@ -13,11 +13,18 @@
       "lendingPeriodLow": 0.01,
       "lendingPeriodHigh": 0.1,
       "minOrderSize": 0.002,
-      "orderCount": 10
+      "orderCount": 10,
+      "alerts": [
+        {
+          "rate": 0.01,
+          "alertMessage": "BTC funding rate broken 0.01% #funding"
+        }
+      ]
     }
   ],
   "server": {
     "logLevel": 1,
-    "updateIntervalMinutes": 60
+    "updateIntervalMinutes": 60,
+    "alertWebhook": ""
   }
 }

@@ -34,9 +34,12 @@ class BitfinexApiv2 {
             walletTimer: null,
             offers: [],
             loans: [],
+            maxRates: [],
+            lastRates: [],
         };
 
         this.calcs = [];
+        this.fundingRateHighCallback = () => {};
     }
 
     /**
@@ -59,7 +62,7 @@ class BitfinexApiv2 {
             ws.on('open', () => { logger.debug('socket opened'); ws.auth(); });
             ws.on('close', () => { logger.debug('socket closed'); });
 
-            //ws.on('message', msg => console.log(msg));
+            // ws.on('message', msg => console.log(msg));
 
             // Happens once when we are authenticated. We use this to complete set up
             ws.once('auth', () => {
@@ -68,7 +71,11 @@ class BitfinexApiv2 {
                 // subscribe tickers
                 symbols.forEach((symbol) => {
                     const bfxSymbol = `f${symbol.toUpperCase()}`;
+
+                    this.state.maxRates[symbol] = 0;
+                    this.state.lastRates[symbol] = 0;
                     ws.subscribeTicker(bfxSymbol);
+                    ws.subscribeTrades(bfxSymbol);
                 });
 
                 // calc the wallet
@@ -101,6 +108,16 @@ class BitfinexApiv2 {
                 ws.onTicker(eventFilter, (ticker) => {
                     logger.debug(`ticker for ${symbol}`);
                     this.onTicker(ticker);
+                });
+
+                ws.onTrades(eventFilter, (trades) => {
+                    trades.forEach((trade) => {
+                        this.state.lastRates[symbol] = trade.rate;
+                        if (trade.rate > this.state.maxRates[symbol]) {
+                            this.fundingRateHighCallback(symbol, this.state.maxRates[symbol], trade.rate);
+                            this.state.maxRates[symbol] = trade.rate;
+                        }
+                    });
                 });
 
                 // Funds I'm offering to lend out
@@ -210,12 +227,28 @@ class BitfinexApiv2 {
     }
 
     /**
+     * Set the callback to call when funding rate gets to a new high for a symbol
+     * @param cb
+     */
+    onFundingRateHigh(cb) {
+        this.fundingRateHighCallback = cb;
+    }
+
+    /**
+     * Reset the highs for the funding rate
+     */
+    resetFundingRateHigh() {
+        const keys = Object.keys(this.state.maxRates);
+        keys.forEach((k) => { this.state.maxRates[k] = this.state.lastRates[k]; });
+    }
+
+    /**
      * Returns the current FRR rate for the symbol
      * @param symbol
      * @returns {*}
      */
     frr(symbol) {
-        const tick = this.state.ticker.filter(item => item.symbol === symbol);
+        const tick = this.state.ticker.filter(item => item.symbol === `f${symbol.toUpperCase()}`);
         if (tick.length !== 1) {
             return 0;
         }

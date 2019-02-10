@@ -21,6 +21,7 @@
     "bitfinex-api-node": "^2.0.4",
     "body-parser": "^1.18.2",
     "config": "^2.0.1",
+    "request": "^2.88.0",
     "terminal-kit": "^1.14.3"
   },
   "devDependencies": {
