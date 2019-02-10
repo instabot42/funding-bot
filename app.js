@@ -53,11 +53,6 @@ function sleep(s) {
 async function rebalanceFunding(options) {
     const symbol = options.symbol;
 
-    // figure out the range we'll offer into
-    const frr = bfx.frr(symbol);
-    const lowRate = Math.max(frr * options.frrMultipleLow, options.atLeastLow / 100);
-    const highRate = Math.max(frr * options.frrMultipleHigh, options.atLeastHigh / 100);
-
     // Cancel existing offers
     logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
     logger.progress('  Cancelling existing open offers');
@@ -78,6 +73,13 @@ async function rebalanceFunding(options) {
     const idealOrderCount = options.orderCount;
     const perOrder = util.roundDown(Math.max(available / idealOrderCount, options.minOrderSize), 5);
     const orderCount = Math.floor(available / perOrder);
+
+    // figure out the range we'll offer into
+    const frr = bfx.frr(symbol);
+    const lowRate = Math.max(frr * options.frrMultipleLow, options.atLeastLow / 100);
+    const highRate = Math.max(frr * options.frrMultipleHigh, options.atLeastHigh / 100);
+
+    // progress update
     logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}`);
     logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}%.`);
 
