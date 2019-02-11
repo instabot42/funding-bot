@@ -54,7 +54,7 @@ The default setup will look a bit like this....
       "atLeastHigh": 0.1,
       "lendingPeriodLow": 0.01,
       "lendingPeriodHigh": 0.1,
-      "minOrderSize": 0.002,
+      "minOrderSize": 0.02,
       "orderCount": 10,
       "alerts": [
         {
