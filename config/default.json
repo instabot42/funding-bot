@@ -14,6 +14,7 @@
       "lendingPeriodHigh": 0.1,
       "minOrderSize": 0.02,
       "orderCount": 10,
+      "easing": "linear",
       "alerts": [
         {
           "rate": 0.01,

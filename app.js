@@ -6,9 +6,12 @@ const util = require('./common/util');
 const callWebhook = require('./notifications/webhook');
 
 const startTime = new Date();
+const alertWebhook = config.get('server.alertWebhook');
 const fundingMarkets = config.get('funding');
 const symbols = fundingMarkets.map(item => item.symbol);
 const bfx = new Bitfinex(config.get('credentials.key'), config.get('credentials.secret'));
+
+let rateUpdates = 0;
 
 /**
  * return 0-1 offering the normalised position of a rate between 2 values
@@ -81,18 +84,21 @@ async function rebalanceFunding(options) {
 
     // progress update
     logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}`);
-    logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}%.`);
+    logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${options.easing} scale.`);
 
-    // Use a non-linear scaled order to position all the offers
-    const rates = scaledPrices(orderCount, lowRate, highRate, 0, 'easeincubic', i => util.round(i, 8));
-    rates.forEach((rate) => {
-        // decide how long to make the offer for and submit it
-        const days = duration(normaliseRate(rate, options.lendingPeriodLow / 100, options.lendingPeriodHigh / 100), 2, 30);
-        bfx.newOffer(symbol, perOrder, rate, days);
-    });
+    if (orderCount > 0) {
+        // Use a non-linear scaled order to position all the offers
+        const rates = scaledPrices(orderCount, lowRate, highRate, 0, options.easing, i => util.round(i, 8));
+        const averageRate = rates.reduce((a, r) => a + r) / orderCount;
+        logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 6)}%.`);
 
-    // reset the highs so alerts can retrigger
-    bfx.resetFundingRateHigh();
+        // place the orders
+        rates.forEach((rate) => {
+            // decide how long to make the offer for and submit it
+            const days = duration(normaliseRate(rate, options.lendingPeriodLow / 100, options.lendingPeriodHigh / 100), 2, 30);
+            bfx.newOffer(symbol, perOrder, rate, days);
+        });
+    }
 }
 
 /**
@@ -101,10 +107,20 @@ async function rebalanceFunding(options) {
  * @param oldRate
  * @param newRate
  */
-function fundingRateAlerts(symbol, oldRate, newRate) {
+function onFundingRateChanged(symbol, oldRate, newRate) {
+    rateUpdates += 1;
+    if (rateUpdates > 100) {
+        logger.results(`Current ${symbol} rate: ${util.roundDown(newRate * 100, 4)}`);
+        rateUpdates = 0;
+    }
+
+    // only interested in the rate going up...
+    if (oldRate > newRate) {
+        return;
+    }
+
     // See if they have a webhook url defined
-    const webhook = config.get('server.alertWebhook');
-    if (!webhook) {
+    if (!alertWebhook) {
         return;
     }
 
@@ -116,12 +132,12 @@ function fundingRateAlerts(symbol, oldRate, newRate) {
 
     // See if we've crossed over the alert threshold
     options.alerts.forEach((alert) => {
-        const rate = alert.rate / 100;
+        const rate = alert.rate / 100.0;
         if (newRate > rate && oldRate < rate) {
             logger.error(`Alert fired - rates crossed over ${alert.rate}%`);
             logger.error(alert.alertMessage);
 
-            callWebhook(webhook, alert.alertMessage);
+            callWebhook(alertWebhook, alert.alertMessage);
         }
     });
 }
@@ -143,7 +159,7 @@ function runBot() {
     });
 
     // Listen out for funding rate highs
-    bfx.onFundingRateHigh(fundingRateAlerts);
+    bfx.fundingRateChangedCallback(onFundingRateChanged);
 }
 
 /** ************************************************************ */

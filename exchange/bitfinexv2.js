@@ -34,12 +34,11 @@ class BitfinexApiv2 {
             walletTimer: null,
             offers: [],
             loans: [],
-            maxRates: [],
             lastRates: [],
         };
 
         this.calcs = [];
-        this.fundingRateHighCallback = () => {};
+        this.fundingRateChanged = () => {};
     }
 
     /**
@@ -72,7 +71,6 @@ class BitfinexApiv2 {
                 symbols.forEach((symbol) => {
                     const bfxSymbol = `f${symbol.toUpperCase()}`;
 
-                    this.state.maxRates[symbol] = 0;
                     this.state.lastRates[symbol] = 0;
                     ws.subscribeTicker(bfxSymbol);
                     ws.subscribeTrades(bfxSymbol);
@@ -112,10 +110,11 @@ class BitfinexApiv2 {
 
                 ws.onTrades(eventFilter, (trades) => {
                     trades.forEach((trade) => {
+                        const previous = this.state.lastRates[symbol];
                         this.state.lastRates[symbol] = trade.rate;
-                        if (trade.rate > this.state.maxRates[symbol]) {
-                            this.fundingRateHighCallback(symbol, this.state.maxRates[symbol], trade.rate);
-                            this.state.maxRates[symbol] = trade.rate;
+
+                        if (trade.rate !== previous) {
+                            this.fundingRateChanged(symbol, previous, trade.rate);
                         }
                     });
                 });
@@ -230,16 +229,8 @@ class BitfinexApiv2 {
      * Set the callback to call when funding rate gets to a new high for a symbol
      * @param cb
      */
-    onFundingRateHigh(cb) {
-        this.fundingRateHighCallback = cb;
-    }
-
-    /**
-     * Reset the highs for the funding rate
-     */
-    resetFundingRateHigh() {
-        const keys = Object.keys(this.state.maxRates);
-        keys.forEach((k) => { this.state.maxRates[k] = this.state.lastRates[k]; });
+    fundingRateChangedCallback(cb) {
+        this.fundingRateChanged = cb;
     }
 
     /**
