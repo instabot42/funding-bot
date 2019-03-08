@@ -56,6 +56,7 @@ The default setup will look a bit like this....
       "lendingPeriodHigh": 0.1,
       "minOrderSize": 0.02,
       "orderCount": 10,
+      "easing": "linear",
       "alerts": [
         {
           "rate": 0.01,
@@ -89,6 +90,7 @@ This contains an list of all the different funding markets you want to trade in.
 - lendingPeriodHigh: All offers over this value will be offered for the longest allowed time (30 days). Rates between the low and high will calculate a suitable offer period between the 2 and 30 days.
 - minOrderSize: The smallest order size the bot should try and use. Note that Bitfinex has a min order size of around $50
 - orderCount: The ideal number of orders to place. May be less than this when there are not enough funds to provide orderCount * minOrderSize orders.
+- easing: The easing method used to spread the orders out in the range. defaults to 'linear'. can be one of linear, easein, easeout, easeinout, easeincubic, easeinquart, easeinquint.
 
 ##### Alerts
 
