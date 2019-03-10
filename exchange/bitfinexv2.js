@@ -34,7 +34,7 @@ class BitfinexApiv2 {
             walletTimer: null,
             offers: [],
             loans: [],
-            lastRates: [],
+            lastRates: {},
         };
 
         this.calcs = [];
