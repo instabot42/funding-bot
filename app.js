@@ -174,7 +174,7 @@ logger.setLevel(config.get('server.logLevel'));
 logger.bright('\n');
 logger.bright('=================================================\n');
 logger.bright('  Instabot Funding bot starting  ️ \n');
-logger.bright('  Tip BTC: 39vBjyAu65vYEd7thnW75V7eULTcz7wgxV\n');
+logger.bright('  Tip BTC: 3NFKTZwmTmvyieXyez5wfegfqK2mipoWwW\n');
 logger.bright('=================================================\n');
 logger.results(`\nStarted at ${startTime}\n`);
 
