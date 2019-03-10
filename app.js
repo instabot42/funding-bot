@@ -11,7 +11,7 @@ const fundingMarkets = config.get('funding');
 const symbols = fundingMarkets.map(item => item.symbol);
 const bfx = new Bitfinex(config.get('credentials.key'), config.get('credentials.secret'));
 
-let rateUpdates = 0;
+const rateUpdates = {};
 
 /**
  * return 0-1 offering the normalised position of a rate between 2 values
@@ -108,10 +108,13 @@ async function rebalanceFunding(options) {
  * @param newRate
  */
 function onFundingRateChanged(symbol, oldRate, newRate) {
-    rateUpdates += 1;
-    if (rateUpdates > 100) {
-        logger.results(`Current ${symbol} rate: ${util.roundDown(newRate * 100, 4)}`);
-        rateUpdates = 0;
+    if (rateUpdates[symbol] === undefined) {
+        rateUpdates[symbol] = 0;
+    }
+    rateUpdates[symbol] += 1;
+    if (rateUpdates[symbol] > 200) {
+        logger.results(`${symbol.toUpperCase()} rate: ${util.roundDown(newRate * 100, 4)}%`);
+        rateUpdates[symbol] = 0;
     }
 
     // only interested in the rate going up...
