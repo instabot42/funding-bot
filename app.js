@@ -1,4 +1,5 @@
 const config = require('config');
+const moment = require('moment');
 const logger = require('./common/logger').logger;
 const Bitfinex = require('./exchange/bitfinexv2');
 const scaledPrices = require('./common/scaled_prices');
@@ -133,14 +134,25 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
         return;
     }
 
+    // get the alerts into rate order (lowest rate first)
+    options.alerts.sort((a, b) => a.rate - b.rate);
+
     // See if we've crossed over the alert threshold
     options.alerts.forEach((alert) => {
+        if (alert.lastTriggered === undefined) {
+            alert.lastTriggered = moment().subtract(1, 'hours');
+        }
+        const justNow = moment().subtract(5, 'minutes');
         const rate = alert.rate / 100.0;
-        if (newRate > rate && oldRate < rate) {
-            logger.error(`Alert fired - rates crossed over ${alert.rate}%`);
-            logger.error(alert.alertMessage);
+        if (newRate >= rate && oldRate < rate) {
+            if (alert.lastTriggered < justNow) {
+                logger.error(`Alert fired - rates crossed over ${alert.rate}%. was ${oldRate}, now ${newRate}`);
 
-            callWebhook(alertWebhook, alert.alertMessage);
+                callWebhook(alertWebhook, alert.alertMessage);
+                alert.lastTriggered = moment();
+            } else {
+                logger.results(`rates crossed over ${alert.rate}%. But sent alert in last 5 minutes.`);
+            }
         }
     });
 }
