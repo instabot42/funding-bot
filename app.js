@@ -55,58 +55,63 @@ function sleep(s) {
  * @returns {Promise<void>}
  */
 async function rebalanceFunding(options) {
-    const symbol = options.symbol;
+    try {
+        const symbol = options.symbol;
 
-    // Cancel existing offers
-    logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
-    logger.progress('  Cancelling existing open offers');
-    bfx.cancelAllOffers(symbol);
+        // Cancel existing offers
+        logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
+        logger.progress('  Cancelling existing open offers');
+        bfx.cancelAllOffers(symbol);
 
-    // wait for the dust to settle
-    logger.progress('  waiting...');
-    await sleep(options.sleep);
+        // wait for the dust to settle
+        logger.progress('  waiting...');
+        await sleep(options.sleep);
 
-    // work out funds available
-    const available = bfx.fundsAvailable(symbol);
-    if (available < options.minOrderSize) {
-        logger.info(`  Not enough ${symbol} - ${available} available`);
-        return;
-    }
-
-    // Work out order sizes and count
-    options.offers.forEach((offer) => {
-        // figure out what percentage of available funds to use for this offer
-        const allocatedFunds = (available * offer.amount) / 100;
-
-        // work out the order count, limited by min order size and available funds
-        const idealOrderCount = offer.orderCount;
-        const perOrder = util.roundDown(Math.max(allocatedFunds / idealOrderCount, offer.minOrderSize), 5);
-        const orderCount = Math.floor(allocatedFunds / perOrder);
-
-        // figure out the range we'll offer into
-        const frr = bfx.frr(symbol);
-        const lowRate = Math.max(frr * offer.frrMultipleLow, offer.atLeastLow / 100);
-        const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100);
-
-        // progress update
-        logger.results('Offer...');
-        logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(allocatedFunds, 4)}`);
-        logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
-
-        if (orderCount > 0) {
-            // Use a non-linear scaled order to position all the offers
-            const rates = scaledPrices(orderCount, lowRate, highRate, 0, offer.easing, i => util.round(i, 8));
-            const averageRate = rates.reduce((a, r) => a + r) / orderCount;
-            logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 3)}%.`);
-
-            // place the orders
-            rates.forEach((rate) => {
-                // decide how long to make the offer for and submit it
-                const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
-                bfx.newOffer(symbol, perOrder, rate, days);
-            });
+        // work out funds available
+        const available = bfx.fundsAvailable(symbol);
+        if (available < options.minOrderSize) {
+            logger.info(`  Not enough ${symbol} - ${available} available`);
+            return;
         }
-    });
+
+        // Work out order sizes and count
+        options.offers.forEach((offer) => {
+            // figure out what percentage of available funds to use for this offer
+            const allocatedFunds = (available * offer.amount) / 100;
+
+            // work out the order count, limited by min order size and available funds
+            const idealOrderCount = offer.orderCount;
+            const perOrder = util.roundDown(Math.max(allocatedFunds / idealOrderCount, offer.minOrderSize), 5);
+            const orderCount = Math.floor(allocatedFunds / perOrder);
+
+            // figure out the range we'll offer into
+            const frr = bfx.frr(symbol);
+            const lowRate = Math.max(frr * offer.frrMultipleLow, offer.atLeastLow / 100);
+            const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100);
+
+            // progress update
+            logger.results('Offer...');
+            logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(allocatedFunds, 4)}`);
+            logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
+
+            if (orderCount > 0) {
+                // Use a non-linear scaled order to position all the offers
+                const rates = scaledPrices(orderCount, lowRate, highRate, 0, offer.easing, i => util.round(i, 8));
+                const averageRate = rates.reduce((a, r) => a + r) / orderCount;
+                logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 3)}%.`);
+
+                // place the orders
+                rates.forEach((rate) => {
+                    // decide how long to make the offer for and submit it
+                    const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
+                    bfx.newOffer(symbol, perOrder, rate, days);
+                });
+            }
+        });
+    } catch (err) {
+        logger.error(err.message);
+        logger.error(err);
+    }
 }
 
 /**
