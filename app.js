@@ -74,32 +74,39 @@ async function rebalanceFunding(options) {
     }
 
     // Work out order sizes and count
-    const idealOrderCount = options.orderCount;
-    const perOrder = util.roundDown(Math.max(available / idealOrderCount, options.minOrderSize), 5);
-    const orderCount = Math.floor(available / perOrder);
+    options.offers.forEach((offer) => {
+        // figure out what percentage of available funds to use for this offer
+        const allocatedFunds = (available * offer.amount) / 100;
 
-    // figure out the range we'll offer into
-    const frr = bfx.frr(symbol);
-    const lowRate = Math.max(frr * options.frrMultipleLow, options.atLeastLow / 100);
-    const highRate = Math.max(frr * options.frrMultipleHigh, options.atLeastHigh / 100);
+        // work out the order count, limited by min order size and available funds
+        const idealOrderCount = offer.orderCount;
+        const perOrder = util.roundDown(Math.max(allocatedFunds / idealOrderCount, offer.minOrderSize), 5);
+        const orderCount = Math.floor(allocatedFunds / perOrder);
 
-    // progress update
-    logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}`);
-    logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${options.easing} scale.`);
+        // figure out the range we'll offer into
+        const frr = bfx.frr(symbol);
+        const lowRate = Math.max(frr * offer.frrMultipleLow, offer.atLeastLow / 100);
+        const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100);
 
-    if (orderCount > 0) {
-        // Use a non-linear scaled order to position all the offers
-        const rates = scaledPrices(orderCount, lowRate, highRate, 0, options.easing, i => util.round(i, 8));
-        const averageRate = rates.reduce((a, r) => a + r) / orderCount;
-        logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 6)}%.`);
+        // progress update
+        logger.results('Offer...');
+        logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(allocatedFunds, 4)}`);
+        logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
 
-        // place the orders
-        rates.forEach((rate) => {
-            // decide how long to make the offer for and submit it
-            const days = duration(normaliseRate(rate, options.lendingPeriodLow / 100, options.lendingPeriodHigh / 100), 2, 30);
-            bfx.newOffer(symbol, perOrder, rate, days);
-        });
-    }
+        if (orderCount > 0) {
+            // Use a non-linear scaled order to position all the offers
+            const rates = scaledPrices(orderCount, lowRate, highRate, 0, offer.easing, i => util.round(i, 8));
+            const averageRate = rates.reduce((a, r) => a + r) / orderCount;
+            logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 3)}%.`);
+
+            // place the orders
+            rates.forEach((rate) => {
+                // decide how long to make the offer for and submit it
+                const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
+                bfx.newOffer(symbol, perOrder, rate, days);
+            });
+        }
+    });
 }
 
 /**

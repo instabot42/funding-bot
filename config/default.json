@@ -6,15 +6,21 @@
   "funding": [
     {
       "symbol": "btc",
-      "frrMultipleLow": 0.5,
-      "frrMultipleHigh": 5.0,
-      "atLeastLow": 0.0,
-      "atLeastHigh": 0.1,
-      "lendingPeriodLow": 0.01,
-      "lendingPeriodHigh": 0.1,
-      "minOrderSize": 0.02,
-      "orderCount": 10,
-      "easing": "linear",
+      "sleep": 5,
+      "offers": [
+        {
+          "amount": 100,
+          "frrMultipleLow": 0.5,
+          "frrMultipleHigh": 5.0,
+          "atLeastLow": 0.0,
+          "atLeastHigh": 0.1,
+          "lendingPeriodLow": 0.01,
+          "lendingPeriodHigh": 0.1,
+          "minOrderSize": 0.02,
+          "orderCount": 10,
+          "easing": "linear"
+        }
+      ],
       "alerts": [
         {
           "rate": 0.01,
