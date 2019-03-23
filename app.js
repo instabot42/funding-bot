@@ -154,7 +154,7 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
         if (alert.lastTriggered === undefined) {
             alert.lastTriggered = moment().subtract(1, 'hours');
         }
-        const justNow = moment().subtract(5, 'minutes');
+        const justNow = moment().subtract(alert.maxFrequency || 5, 'minutes');
         const rate = alert.rate / 100.0;
         if (newRate >= rate && oldRate < rate) {
             if (alert.lastTriggered < justNow) {

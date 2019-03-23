@@ -24,6 +24,7 @@
       "alerts": [
         {
           "rate": 0.01,
+          "maxFrequency": 5,
           "alertMessage": "BTC funding rate broken 0.01% #funding"
         }
       ]
