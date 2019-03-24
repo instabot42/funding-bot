@@ -91,7 +91,7 @@ async function rebalanceFunding(options) {
 
             // progress update
             logger.results('Offer...');
-            logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(allocatedFunds, 4)}`);
+            logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, 4)}`);
             logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
 
             if (orderCount > 0) {
