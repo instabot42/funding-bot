@@ -3,6 +3,7 @@ const moment = require('moment');
 const logger = require('./common/logger').logger;
 const Bitfinex = require('./exchange/bitfinexv2');
 const scaledPrices = require('./common/scaled_prices');
+const scaledAmounts = require('./common/scaled_amounts');
 const util = require('./common/util');
 const callWebhook = require('./notifications/webhook');
 
@@ -100,11 +101,15 @@ async function rebalanceFunding(options) {
                 const averageRate = rates.reduce((a, r) => a + r) / orderCount;
                 logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 3)}%.`);
 
+                // Amounts, with randomisation
+                const round = x => util.roundDown(x, 5);
+                const amounts = scaledAmounts(orderCount, allocatedFunds, offer.minOrderSize, offer.randomAmountsPercent / 100, round);
+
                 // place the orders
-                rates.forEach((rate) => {
+                rates.forEach((rate, i) => {
                     // decide how long to make the offer for and submit it
                     const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
-                    bfx.newOffer(symbol, perOrder, rate, days);
+                    bfx.newOffer(symbol, amounts[i], rate, days);
                 });
             }
         });
