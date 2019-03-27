@@ -99,6 +99,7 @@ This contains an list of all the different funding markets you want to trade in.
   - lendingPeriodHigh: All offers over this value will be offered for the longest allowed time (30 days). Rates between the low and high will calculate a suitable offer period between the 2 and 30 days.
   - minOrderSize: The smallest order size the bot should try and use. Note that Bitfinex has a min order size of around $50 equivalent
   - orderCount: The ideal number of orders to place. May be less than this when there are not enough funds to provide orderCount * minOrderSize orders.
+  - randomAmountsPercent: How much (as a percentage) to randomise order sizes by. eg, 5 would result in order sizes being +-5% from the default amount. If available funds are limited and minOrderSize is taking effect, the randomisation will be reduced to attempt to keep all orders above the min.
   - easing: The easing method used to spread the orders out in the range. defaults to 'linear'. can be one of linear, easein, easeout, easeinout, easeincubic, easeinquart, easeinquint.
 
 ##### Alerts
