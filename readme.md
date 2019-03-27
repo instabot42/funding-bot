@@ -60,6 +60,7 @@ The default setup will look a bit like this....
           "lendingPeriodHigh": 0.1,
           "minOrderSize": 0.02,
           "orderCount": 10,
+          "randomAmountsPercent": 5,
           "easing": "linear"
         }
       ],
