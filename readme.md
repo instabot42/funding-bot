@@ -110,7 +110,7 @@ This contains an list of all the different funding markets you want to trade in.
 - alertMessage: The message to send in the webhook
 
 The funding bot can alert you when the funding rates exceeds some threshold you set. It does this by calling a webhook that you
-define. This can be used to push alerts from the bot to services like [Alert-a-tron](https://alertatron.com/),
+define. This can be used to push alerts from the bot to services like [Alertatron](https://alertatron.com/),
 [IFTTT](https://ifttt.com/), or [Zapier](https://zapier.com/).
 
 You will need to provide a webhook URL in the `server.alertWebhook` setting for alerts to work.
@@ -138,9 +138,7 @@ This section contains some more general settings.
 If you're using this to help you trade 24/7, it would be great if you could throw me a few Satoshi
 from time to time to say thanks.
 
-* Bitcoin: 3NFKTZwmTmvyieXyez5wfegfqK2mipoWwW
-* Litecoin: LUov5izfzuDakBeLGGCtyzmZcwCB2nXBDY
-* Eth: 0xA456DE943e64fCdf9B9C2d04d0653a752Ce6Fc3E
+[Donate with Crypto](https://commerce.coinbase.com/checkout/4a67a444-578b-4908-ac9d-8ea716e8b0cb)
 
 Thanks!
 
