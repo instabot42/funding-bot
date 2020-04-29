@@ -26,12 +26,8 @@
     "terminal-kit": "^1.35.2"
   },
   "devDependencies": {
-    "chai": "^4.2.0",
     "eslint": "^4.17.0",
     "eslint-config-airbnb-base": "^11.3.2",
-    "eslint-plugin-import": "^2.20.2",
-    "istanbul": "1.1.0-alpha.1",
-    "mocha": "^5.2.0",
-    "sinon": "^7.5.0"
+    "eslint-plugin-import": "^2.20.2"
   }
 }
