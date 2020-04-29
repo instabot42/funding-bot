@@ -69,48 +69,60 @@ async function rebalanceFunding(options) {
         await sleep(options.sleep);
 
         // work out funds available
-        const available = bfx.fundsAvailable(symbol);
+        const totalFunds = bfx.fundsTotal(symbol);
+        let available = bfx.fundsAvailable(symbol);
         if (available < options.minOrderSize) {
             logger.info(`  Not enough ${symbol} - ${available} available`);
             return;
         }
 
+        logger.info(`Total Funds: ${totalFunds}. Available: ${available}`);
+
         // Work out order sizes and count
         options.offers.forEach((offer) => {
             // figure out what percentage of available funds to use for this offer
-            const allocatedFunds = (available * offer.amount) / 100;
+            const allocatedFundsDesired = (totalFunds * offer.amount) / 100;
+            const allocatedFunds = Math.min(allocatedFundsDesired, available);
+            available -= allocatedFunds;
+            if (available < 0) {
+                available = 0;
+            }
 
-            // work out the order count, limited by min order size and available funds
-            const idealOrderCount = offer.orderCount;
-            const perOrder = util.roundDown(Math.max(allocatedFunds / idealOrderCount, offer.minOrderSize), 5);
-            const orderCount = Math.floor(allocatedFunds / perOrder);
+            if (allocatedFunds < offer.minOrderSize) {
+                logger.results(`No funds available for this block. Wanted to allocate ${allocatedFundsDesired}`);
+            } else {
+                // work out the order count, limited by min order size and available funds
+                const idealOrderCount = offer.orderCount;
+                const perOrder = util.roundDown(Math.max(allocatedFunds / idealOrderCount, offer.minOrderSize), 5);
+                const orderCount = Math.floor(allocatedFunds / perOrder);
 
-            // figure out the range we'll offer into
-            const frr = bfx.frr(symbol);
-            const lowRate = Math.max(frr * offer.frrMultipleLow, offer.atLeastLow / 100);
-            const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100);
+                // figure out the range we'll offer into
+                const frr = bfx.frr(symbol);
+                const lowRate = Math.max(frr * offer.frrMultipleLow, offer.atLeastLow / 100);
+                const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100);
 
-            // progress update
-            logger.results('Offer...');
-            logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, 4)}`);
-            logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
+                // progress update
+                logger.results(`Offer ${allocatedFunds} (had wanted to offer ${allocatedFundsDesired})`);
+                logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, 4)}`);
+                logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
 
-            if (orderCount > 0) {
-                // Use a non-linear scaled order to position all the offers
-                const rates = scaledPrices(orderCount, lowRate, highRate, 0, offer.easing, i => util.round(i, 8));
-                const averageRate = rates.reduce((a, r) => a + r) / orderCount;
-                logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 3)}%.`);
+                if (orderCount > 0) {
+                    // Use a non-linear scaled order to position all the offers
+                    const rates = scaledPrices(orderCount, lowRate, highRate, 0, offer.easing, i => util.round(i, 8));
+                    const averageRate = rates.reduce((a, r) => a + r) / orderCount;
+                    logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 3)}%.`);
 
-                // Amounts, with randomisation
-                const round = x => util.roundDown(x, 5);
-                const amounts = scaledAmounts(orderCount, allocatedFunds, offer.minOrderSize, offer.randomAmountsPercent / 100, round);
+                    // Amounts, with randomisation
+                    const round = x => util.roundDown(x, 5);
+                    const amounts = scaledAmounts(orderCount, allocatedFunds, offer.minOrderSize, offer.randomAmountsPercent / 100, round);
 
-                // place the orders
-                rates.forEach((rate, i) => {
-                    // decide how long to make the offer for and submit it
-                    const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
-                    bfx.newOffer(symbol, amounts[i], rate, days);
-                });
+                    // place the orders
+                    rates.forEach((rate, i) => {
+                        // decide how long to make the offer for and submit it
+                        const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
+                        bfx.newOffer(symbol, amounts[i], rate, days);
+                    });
+                }
             }
         });
     } catch (err) {
@@ -159,7 +171,8 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
         if (alert.lastTriggered === undefined) {
             alert.lastTriggered = moment().subtract(1, 'hours');
         }
-        const justNow = moment().subtract(alert.maxFrequency || 5, 'minutes');
+        const freq = alert.maxFrequency || 5;
+        const justNow = moment().subtract(freq, 'minutes');
         const rate = alert.rate / 100.0;
         if (newRate >= rate && oldRate < rate) {
             if (alert.lastTriggered < justNow) {
@@ -168,7 +181,7 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
                 callWebhook(alertWebhook, alert.alertMessage);
                 alert.lastTriggered = moment();
             } else {
-                logger.results(`rates crossed over ${alert.rate}%. But sent alert in last 5 minutes.`);
+                logger.results(`rates crossed over ${alert.rate}%. But sent alert in last ${freq} minutes.`);
             }
         }
     });
@@ -203,7 +216,7 @@ logger.setLevel(config.get('server.logLevel'));
 logger.bright('\n');
 logger.bright('=================================================\n');
 logger.bright('  Instabot Funding bot starting  ️ \n');
-logger.bright('  Tip BTC: 3NFKTZwmTmvyieXyez5wfegfqK2mipoWwW\n');
+logger.bright('  Want to send a tip with all your mad gainz - see the readme  ️ \n');
 logger.bright('=================================================\n');
 logger.results(`\nStarted at ${startTime}\n`);
 

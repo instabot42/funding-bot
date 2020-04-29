@@ -303,6 +303,15 @@ class BitfinexApiv2 {
         return funds[0].balanceAvailable;
     }
 
+    fundsTotal(symbol) {
+        const funds = this.state.wallet.filter(item => item.currency.toUpperCase() === symbol.toUpperCase());
+        if (funds.length === 0) {
+            return 0;
+        }
+
+        return funds[0].balance;
+    }
+
     /**
      * Ask for the available balance to be updated.
      */

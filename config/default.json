@@ -9,17 +9,30 @@
       "sleep": 5,
       "offers": [
         {
-          "amount": 100,
+          "amount": 60,
           "frrMultipleLow": 0.5,
           "frrMultipleHigh": 5.0,
-          "atLeastLow": 0.0,
-          "atLeastHigh": 0.1,
+          "atLeastLow": 0.1,
+          "atLeastHigh": 0.5,
           "lendingPeriodLow": 0.01,
           "lendingPeriodHigh": 0.1,
           "minOrderSize": 0.02,
           "orderCount": 10,
           "randomAmountsPercent": 0,
           "easing": "linear"
+        },
+        {
+          "amount": 40,
+          "frrMultipleLow": 0.8,
+          "frrMultipleHigh": 5.0,
+          "atLeastLow": 0.0,
+          "atLeastHigh": 0.1,
+          "lendingPeriodLow": 0.02,
+          "lendingPeriodHigh": 0.1,
+          "minOrderSize": 0.02,
+          "orderCount": 10,
+          "randomAmountsPercent": 0,
+          "easing": "easein"
         }
       ],
       "alerts": [

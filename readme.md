@@ -90,7 +90,7 @@ This contains an list of all the different funding markets you want to trade in.
 
 - symbol: The name of the symbol (btc, usd, ltc and eth are supported by Bitfinex at the moment)
 - sleep: how long to wait after cancelling orders before trying to place new orders
-- offers: an array of offers to make on the symbol. Each offer contains the following settings...
+- offers: an array of offers to make on the symbol. Funds are allocated to each offer in order (so the first offer gets first shout on any available funds). Each offer contains the following settings...
   - amount: Percentage of your available funds to use on this offer. Ideally, the amounts of all offers for a symbol should add up to 100, assuming you want to use all your funds.
   - frrMultipleLow: Used to determine the lower end of the range for offers. Current FRR * frrMultipleLow
   - frrMultipleHigh: The FRR multiplier used to find the high end of the range of prices to offer at
