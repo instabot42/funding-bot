@@ -41,15 +41,25 @@ function duration(t, min, max) {
 }
 
 /**
- * Just wait for some seconds
- * @param s
+ * Just wait for some ms seconds
+ * @param ms
  * @returns {Promise<any>}
  */
-function sleep(s) {
+function sleepMs(ms) {
     return new Promise((resolve) => {
-        setTimeout(() => { resolve(); }, s * 1000);
+        setTimeout(() => { resolve(); }, ms);
     });
 }
+
+/**
+ * Sleep for n seconds
+ * @param s
+ * @returns {Promise<void>}
+ */
+async function sleep(s) {
+    await sleepMs(s * 1000);
+}
+
 
 /**
  *
@@ -117,10 +127,11 @@ async function rebalanceFunding(options) {
                     const amounts = scaledAmounts(orderCount, allocatedFunds, offer.minOrderSize, offer.randomAmountsPercent / 100, round);
 
                     // place the orders
-                    rates.forEach((rate, i) => {
+                    rates.forEach(async (rate, i) => {
                         // decide how long to make the offer for and submit it
                         const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
                         bfx.newOffer(symbol, amounts[i], rate, days);
+                        await sleepMs(250);
                     });
                 }
             }
