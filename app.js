@@ -89,7 +89,7 @@ async function rebalanceFunding(options) {
         logger.info(`Total Funds: ${totalFunds}. Available: ${available}`);
 
         // Work out order sizes and count
-        options.offers.forEach((offer) => {
+        options.offers.forEach(async (offer) => {
             // figure out what percentage of available funds to use for this offer
             const allocatedFundsDesired = (totalFunds * offer.amount) / 100;
             const allocatedFunds = Math.min(allocatedFundsDesired, available);
@@ -127,12 +127,17 @@ async function rebalanceFunding(options) {
                     const amounts = scaledAmounts(orderCount, allocatedFunds, offer.minOrderSize, offer.randomAmountsPercent / 100, round);
 
                     // place the orders
-                    rates.forEach(async (rate, i) => {
+                    let i = 0;
+                    for (const rate of rates) {
+                        await sleepMs(300);
+
                         // decide how long to make the offer for and submit it
                         const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
                         bfx.newOffer(symbol, amounts[i], rate, days);
-                        await sleepMs(250);
-                    });
+                        i += 1;
+                    }
+
+                    logger.progress(`  ${i} Orders placed`);
                 }
             }
         });
