@@ -47,6 +47,7 @@
   "server": {
     "logLevel": 1,
     "updateIntervalMinutes": 60,
-    "alertWebhook": ""
+    "alertWebhook": "",
+    "rateLimitDelay": 300
   }
 }

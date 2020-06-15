@@ -9,6 +9,7 @@ const callWebhook = require('./notifications/webhook');
 
 const startTime = new Date();
 const alertWebhook = config.get('server.alertWebhook');
+const rateLimit = config.get('server.rateLimitDelay');
 const fundingMarkets = config.get('funding');
 const symbols = fundingMarkets.map(item => item.symbol);
 const bfx = new Bitfinex(config.get('credentials.key'), config.get('credentials.secret'));
@@ -72,7 +73,11 @@ async function rebalanceFunding(options) {
         // Cancel existing offers
         logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
         logger.progress('  Cancelling existing open offers');
-        bfx.cancelAllOffers(symbol);
+        const existingOffers = bfx.getAllOffers(symbol);
+        for (const offerId of existingOffers) {
+            await sleepMs(rateLimit);
+            bfx.cancelOffer(offerId);
+        }
 
         // wait for the dust to settle
         logger.progress('  waiting...');
@@ -129,7 +134,7 @@ async function rebalanceFunding(options) {
                     // place the orders
                     let i = 0;
                     for (const rate of rates) {
-                        await sleepMs(300);
+                        await sleepMs(rateLimit);
 
                         // decide how long to make the offer for and submit it
                         const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);

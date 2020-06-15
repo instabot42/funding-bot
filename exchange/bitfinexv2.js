@@ -290,6 +290,15 @@ class BitfinexApiv2 {
     }
 
     /**
+     * Find all the offers
+     * @param symbol
+     * @returns {*[]}
+     */
+    getAllOffers(symbol) {
+        return this.state.offers.filter(item => item.symbol === `f${symbol.toUpperCase()}`).map(offer => offer.id);
+    }
+
+    /**
      * return the available funds for the symbol
      * @param symbol
      * @returns {number}
