@@ -4,9 +4,13 @@ const logger = require('../common/logger').logger;
 /**
  * Send a message
  */
-module.exports = (url, msg) => {
+module.exports = (url, msg, rate, newRate, oldRate) => {
+    const formatted = msg.replace('{{rate}}', `${rate * 100}`)
+        .replace('{{newRate}}', `${newRate * 100}`)
+        .replace('{{oldRate}}', `${oldRate * 100}`);
+
     const data = {
-        message: msg,
+        message: formatted,
         from: 'Instabot Funding bot',
     };
 

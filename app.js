@@ -104,7 +104,7 @@ async function rebalanceFunding(options) {
             }
 
             if (allocatedFunds < offer.minOrderSize) {
-                logger.results(`No funds available for this block. Wanted to allocate ${allocatedFundsDesired}`);
+                logger.results(`No funds available for block (${offer.amount}% funds from ${offer.atLeastLow} to ${offer.atLeastHigh}). Wanted to allocate ${allocatedFundsDesired}`);
             } else {
                 // work out the order count, limited by min order size and available funds
                 const idealOrderCount = offer.orderCount;
@@ -163,7 +163,7 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
         rateUpdates[symbol] = 0;
     }
     rateUpdates[symbol] += 1;
-    if (rateUpdates[symbol] > 200) {
+    if (rateUpdates[symbol] > 100) {
         logger.results(`${symbol.toUpperCase()} rate: ${util.roundDown(newRate * 100, 4)}%`);
         rateUpdates[symbol] = 0;
     }
@@ -196,13 +196,13 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
         const justNow = moment().subtract(freq, 'minutes');
         const rate = alert.rate / 100.0;
         if (newRate >= rate && oldRate < rate) {
-            if (alert.lastTriggered < justNow) {
-                logger.error(`Alert fired - rates crossed over ${alert.rate}%. was ${oldRate}, now ${newRate}`);
+            if (alert.lastTriggered.isBefore(justNow)) {
+                logger.error(`Alert fired - ${symbol} rates crossed over ${alert.rate}%. was ${oldRate}, now ${newRate}`);
 
-                callWebhook(alertWebhook, alert.alertMessage);
+                callWebhook(alertWebhook, alert.alertMessage, rate, newRate, oldRate);
                 alert.lastTriggered = moment();
             } else {
-                logger.results(`rates crossed over ${alert.rate}%. But sent alert in last ${freq} minutes.`);
+                logger.results(`${symbol} rates crossed over ${alert.rate}%. But sent alert in last ${freq} minutes.`);
             }
         }
     });

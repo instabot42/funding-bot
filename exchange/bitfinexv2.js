@@ -111,10 +111,10 @@ class BitfinexApiv2 {
                 ws.onTrades(eventFilter, (trades) => {
                     trades.forEach((trade) => {
                         const previous = this.state.lastRates[symbol];
-                        this.state.lastRates[symbol] = trade.rate;
+                        this.state.lastRates[symbol] = +trade.rate;
 
                         if (trade.rate !== previous) {
-                            this.fundingRateChanged(symbol, previous, trade.rate);
+                            this.fundingRateChanged(symbol, previous, +trade.rate);
                         }
                     });
                 });
