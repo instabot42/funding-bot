@@ -94,7 +94,7 @@ async function rebalanceFunding(options) {
         logger.info(`Total Funds: ${totalFunds}. Available: ${available}`);
 
         // Work out order sizes and count
-        options.offers.forEach(async (offer) => {
+        for (const offer of options.offers) {
             // figure out what percentage of available funds to use for this offer
             const allocatedFundsDesired = (totalFunds * offer.amount) / 100;
             const allocatedFunds = Math.min(allocatedFundsDesired, available);
@@ -145,7 +145,7 @@ async function rebalanceFunding(options) {
                     logger.progress(`  ${i} Orders placed`);
                 }
             }
-        });
+        }
     } catch (err) {
         logger.error(err.message);
         logger.error(err);
