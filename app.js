@@ -164,7 +164,7 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
     }
     rateUpdates[symbol] += 1;
     if (rateUpdates[symbol] > 100) {
-        logger.results(`${symbol.toUpperCase()} rate: ${util.roundDown(newRate * 100, 4)}%`);
+        logger.results(`${symbol.toUpperCase()} rate: ${util.roundDown(newRate * 100, 4)}% (APR ${util.roundDown(newRate * 100 * 365, 2)}%)`);
         rateUpdates[symbol] = 0;
     }
 
