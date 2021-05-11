@@ -75,7 +75,7 @@ async function fundsAvailable(symbol, sleepSeconds) {
         available = bfx.fundsAvailable(symbol);
     }
 
-    return available;
+    return util.roundSignificantFigures(available, 4);
 }
 
 /**
@@ -145,7 +145,7 @@ async function rebalanceFunding(options) {
                     logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 3)}%.`);
 
                     // Amounts, with randomisation
-                    const round = x => util.roundDown(x, 5);
+                    const round = x => util.roundSignificantFigures(x, 4);
                     const amounts = scaledAmounts(orderCount, allocatedFunds, offer.minOrderSize, offer.randomAmountsPercent / 100, round);
 
                     // place the orders
