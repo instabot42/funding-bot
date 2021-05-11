@@ -49,7 +49,7 @@ class BitfinexApiv2 {
         const self = this;
 
 
-        this.calcs = symbols.map(symbol => `wallet_funding_${symbol.toUpperCase()}`);
+        this.calcs = symbols.map(symbol => `wallet_funding_${symbol}`);
 
         return new Promise((resolve) => {
             const ws = self.ws;
@@ -66,10 +66,11 @@ class BitfinexApiv2 {
             // Happens once when we are authenticated. We use this to complete set up
             ws.once('auth', () => {
                 logger.progress('bfx v2 API Authenticated');
+                logger.progress(symbols);
 
                 // subscribe tickers
                 symbols.forEach((symbol) => {
-                    const bfxSymbol = `f${symbol.toUpperCase()}`;
+                    const bfxSymbol = `f${symbol}`;
 
                     this.state.lastRates[symbol] = 0;
                     ws.subscribeTicker(bfxSymbol);
@@ -99,7 +100,7 @@ class BitfinexApiv2 {
 
 
             symbols.forEach((symbol) => {
-                const eventFilter = { symbol: `f${symbol.toUpperCase()}` };
+                const eventFilter = { symbol: `f${symbol}` };
                 logger.debug(`Register handlers for ${symbol}`);
 
                 // Every time the price changes, this happens.
@@ -239,7 +240,7 @@ class BitfinexApiv2 {
      * @returns {*}
      */
     frr(symbol) {
-        const tick = this.state.ticker.filter(item => item.symbol === `f${symbol.toUpperCase()}`);
+        const tick = this.state.ticker.filter(item => item.symbol === `f${symbol}`);
         if (tick.length !== 1) {
             return 0;
         }
@@ -258,7 +259,7 @@ class BitfinexApiv2 {
         this.ws.send(
             [0, 'fon', null, {
                 type: 'LIMIT',
-                symbol: `f${symbol.toUpperCase()}`,
+                symbol: `f${symbol}`,
                 amount: String(amount),
                 rate: String(rate),
                 period,
@@ -284,7 +285,7 @@ class BitfinexApiv2 {
      * @param symbol
      */
     cancelAllOffers(symbol) {
-        this.state.offers.filter(item => item.symbol === `f${symbol.toUpperCase()}`).forEach((offer) => {
+        this.state.offers.filter(item => item.symbol === `f${symbol}`).forEach((offer) => {
             this.cancelOffer(offer.id);
         });
     }
@@ -295,7 +296,7 @@ class BitfinexApiv2 {
      * @returns {*[]}
      */
     getAllOffers(symbol) {
-        return this.state.offers.filter(item => item.symbol === `f${symbol.toUpperCase()}`).map(offer => offer.id);
+        return this.state.offers.filter(item => item.symbol === `f${symbol}`).map(offer => offer.id);
     }
 
     /**
@@ -304,7 +305,7 @@ class BitfinexApiv2 {
      * @returns {number}
      */
     fundsAvailable(symbol) {
-        const funds = this.state.wallet.filter(item => item.currency.toUpperCase() === symbol.toUpperCase());
+        const funds = this.state.wallet.filter(item => item.currency === symbol);
         if (funds.length === 0) {
             return 0;
         }
@@ -313,7 +314,7 @@ class BitfinexApiv2 {
     }
 
     fundsTotal(symbol) {
-        const funds = this.state.wallet.filter(item => item.currency.toUpperCase() === symbol.toUpperCase());
+        const funds = this.state.wallet.filter(item => item.currency === symbol);
         if (funds.length === 0) {
             return 0;
         }
