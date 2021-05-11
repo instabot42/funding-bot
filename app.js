@@ -61,6 +61,22 @@ async function sleep(s) {
     await sleepMs(s * 1000);
 }
 
+/**
+ *
+ * @param {*} symbol
+ * @param {*} sleepSeconds
+ * @returns
+ */
+async function fundsAvailable(symbol, sleepSeconds) {
+    let available = null;
+    while (available === null) {
+        bfx.refreshAvailableFunds();
+        await sleep(sleepSeconds);
+        available = bfx.fundsAvailable(symbol);
+    }
+
+    return available;
+}
 
 /**
  *
@@ -72,25 +88,26 @@ async function rebalanceFunding(options) {
 
         // Cancel existing offers
         logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
-        logger.progress('  Cancelling existing open offers');
         const existingOffers = bfx.getAllOffers(symbol);
-        for (const offerId of existingOffers) {
-            await sleepMs(rateLimit);
-            bfx.cancelOffer(offerId);
+        if (existingOffers.length > 0) {
+            logger.progress('  Cancelling existing open offers');
+            for (const offerId of existingOffers) {
+                await sleepMs(rateLimit);
+                bfx.cancelOffer(offerId);
+            }
         }
 
         // wait for the dust to settle
-        logger.progress('  waiting...');
-        await sleep(options.sleep);
+        logger.progress('  waiting for balance to update...');
 
         // work out funds available
-        const totalFunds = bfx.fundsTotal(symbol);
-        let available = bfx.fundsAvailable(symbol);
+        let available = await fundsAvailable(symbol, options.sleep);
         if (available < options.minOrderSize) {
-            logger.info(`  Not enough ${symbol} - ${available} available`);
+            logger.info(`  Not enough ${symbol} - ${available} available - skipping`);
             return;
         }
 
+        const totalFunds = bfx.fundsTotal(symbol);
         logger.info(`Total Funds: ${totalFunds}. Available: ${available}`);
 
         // Work out order sizes and count
@@ -139,6 +156,7 @@ async function rebalanceFunding(options) {
                         // decide how long to make the offer for and submit it
                         const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
                         bfx.newOffer(symbol, amounts[i], rate, days);
+                        logger.progress(`    ${symbol}, ${amounts[i]} at ${rate*100}% for ${days} days.`);
                         i += 1;
                     }
 
@@ -146,6 +164,8 @@ async function rebalanceFunding(options) {
                 }
             }
         }
+
+        logger.info(`${symbol} refresh complete.`);
     } catch (err) {
         logger.error(err.message);
         logger.error(err);
@@ -211,18 +231,40 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
 /**
  * Update all the symbols we are tracking
  */
-function runBot() {
+async function runBot() {
+    if (fundingMarkets.length === 0) {
+        logger.results(`No markets in config, so nothing to do.`);
+        return;
+    }
+
     // Force each symbol to run out of sync with the others, to spread the load
     const waitMinutes = config.get('server.updateIntervalMinutes');
     logger.results(`Refreshing funding positions every ${waitMinutes} minutes.`);
     logger.debug('waiting a few seconds for connection to stabilise before starting...');
 
-    fundingMarkets.forEach((options, i) => {
-        sleep(10 * i).then(() => {
+    // Work out how many ms to wait between each market getting started
+    const delayBetweenMarkets = Math.floor(1000 * 60 * (waitMinutes / fundingMarkets.length));
+    for (let i=0; i<fundingMarkets.length; i+=1) {
+        const options = fundingMarkets[i];
+
+        // Start off by setting up the funding for everything right away
+        await rebalanceFunding(options);
+
+        // then we will wait a while to distribute the refreshes evenly
+        setTimeout(() => {
+            // Do the first refresh of the regular ones
             rebalanceFunding(options);
-            setInterval(() => { rebalanceFunding(options); }, 1000 * 60 * waitMinutes);
-        });
-    });
+
+            // and re-trigger this every waitMinutes forever
+            setInterval(() => {
+                rebalanceFunding(options);
+            }, 1000 * 60 * waitMinutes);
+        }, delayBetweenMarkets * (i + 1));
+
+        await sleep(5);
+    };
+
+    logger.results(`All markets initial setup complete. First refresh in ${util.roundDown(delayBetweenMarkets/1000/60, 2)}m`);
 
     // Listen out for funding rate highs
     bfx.fundingRateChangedCallback(onFundingRateChanged);
@@ -235,10 +277,9 @@ logger.setLevel(config.get('server.logLevel'));
 
 // Welcome message
 logger.bright('\n');
-logger.bright('=================================================\n');
-logger.bright('  Instabot Funding bot starting  ️ \n');
-logger.bright('  Want to send a tip with all your mad gainz - see the readme  ️ \n');
-logger.bright('=================================================\n');
+logger.bright('=================================================');
+logger.bright('  Instabot Funding bot starting  ️ ');
+logger.bright('=================================================');
 logger.results(`\nStarted at ${startTime}\n`);
 
 // start the socket connections

@@ -23,7 +23,7 @@ class Logger {
      */
     error(msg) {
         if (this.level > None) {
-            term.brightRed(`${Logger.toMsg(msg)}\n`);
+            term.brightRed.noFormat(`${Logger.toMsg(msg)}\n`);
         }
     }
 
@@ -33,7 +33,7 @@ class Logger {
      */
     debug(msg) {
         if (this.level >= Debug) {
-            term.gray(`${Logger.toMsg(msg)}\n`);
+            term.gray.noFormat(`${Logger.toMsg(msg)}\n`);
         }
     }
 
@@ -59,7 +59,7 @@ class Logger {
      */
     results(msg) {
         if (this.level > None) {
-            term.brightYellow(`${Logger.toMsg(msg)}\n`);
+            term.brightYellow.noFormat(`${Logger.toMsg(msg)}\n`);
         }
     }
 
@@ -69,7 +69,7 @@ class Logger {
      */
     notice(msg) {
         if (this.level > None) {
-            term.cyan(`${Logger.toMsg(msg)}\n`);
+            term.cyan.noFormat(`${Logger.toMsg(msg)}\n`);
         }
     }
 
@@ -79,7 +79,7 @@ class Logger {
      */
     bright(msg) {
         if (this.level > None) {
-            term.brightWhite.bold(`${Logger.toMsg(msg)}\n`);
+            term.brightWhite.bold.noFormat(`${Logger.toMsg(msg)}\n`);
         }
     }
 
@@ -89,7 +89,7 @@ class Logger {
      */
     log(msg) {
         if (this.level >= Info) {
-            term.brightYellow(`${Logger.toMsg(msg)}\n`);
+            term.brightYellow.noFormat(`${Logger.toMsg(msg)}\n`);
         }
     }
 
@@ -99,7 +99,7 @@ class Logger {
      */
     logResponse(msg) {
         if (this.level >= Info) {
-            term.gray(`${Logger.toMsg(msg)}\n`);
+            term.gray.noFormat(`${Logger.toMsg(msg)}\n`);
         }
     }
 
@@ -117,7 +117,7 @@ class Logger {
      */
     msg(msg) {
         if (this.level >= Info) {
-            term.green(`${Logger.toMsg(msg)}\n`);
+            term.green.noFormat(`${Logger.toMsg(msg)}\n`);
         }
     }
 
