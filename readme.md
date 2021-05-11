@@ -132,17 +132,6 @@ This section contains some more general settings.
 
 
 
-
-## All donations gratefully accepted!
-
-If you're using this to help you trade 24/7, it would be great if you could throw me a few Satoshi
-from time to time to say thanks.
-
-[Donate with Crypto](https://commerce.coinbase.com/checkout/4a67a444-578b-4908-ac9d-8ea716e8b0cb)
-
-Thanks!
-
-
 ## License
 
 Copyright 2018 Instabot
