@@ -145,10 +145,10 @@ async function rebalanceFunding(options) {
                 const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100, bestRate * 1.1);
 
                 // progress update
-                logger.results(`Offer ${allocatedFunds}${symbol} (had wanted to offer ${allocatedFundsDesired}${symbol} - ${offer.amount}%)`);
-                logger.results(`FRR: ${util.roundDown(frr * 100, 3)}%. Best Rate: ${util.roundDown(bestRate * 100, 3)}%.`);
+                logger.results(`Offer ${allocatedFunds} ${symbol} (had wanted to offer ${allocatedFundsDesired} ${symbol} - ${offer.amount}%)`);
+                logger.results(`FRR: ${util.roundDown(frr * 100, 5)}%. Best Rate: ${util.roundDown(bestRate * 100, 5)}%.`);
                 logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, rounding)}`);
-                logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
+                logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 5)}% to ${util.roundDown(highRate * 100, 5)}% with ${offer.easing} scale.`);
 
                 if (orderCount > 0) {
                     // Use a non-linear scaled order to position all the offers
@@ -168,7 +168,7 @@ async function rebalanceFunding(options) {
                         // decide how long to make the offer for and submit it
                         const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), minDays, maxDays);
                         bfx.newOffer(symbol, amounts[i], rate, days);
-                        logger.progress(`    ${amounts[i]}${symbol} at ${util.roundDown(rate*100, 3)}% for ${days} days.`);
+                        logger.progress(`    ${amounts[i]} ${symbol} at ${util.roundDown(rate*100, 5)}% for ${days} days.`);
                         i += 1;
                     }
 
@@ -228,19 +228,20 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
         rateUpdates[symbol] = 0;
     }
     rateUpdates[symbol] += 1;
-    if (rateUpdates[symbol] > 100) {
-        const best = recentBestRate(symbol);
-        logger.results(`${symbol.toUpperCase()} Last Rate: ${util.roundDown(newRate * 100, 4)}% (APR ${util.roundDown(newRate * 100 * 365, 2)}%).`);
-        logger.results(`${symbol.toUpperCase()} Best Rate: ${util.roundDown(best * 100, 4)}% (APR ${util.roundDown(best * 100 * 365, 2)}%).`);
-        rateUpdates[symbol] = 0;
-    }
 
     // only interested in the rate going up...
     if (oldRate > newRate) {
         return;
     }
 
+    // Show the rate (occasionally)
     trackRate(symbol, newRate);
+    if (rateUpdates[symbol] > 100) {
+        const best = recentBestRate(symbol);
+        logger.results(`${symbol.toUpperCase()} Last Rate: ${util.roundDown(newRate * 100, 4)}% (APR ${util.roundDown(newRate * 100 * 365, 2)}%).`);
+        logger.results(`${symbol.toUpperCase()} Best Rate: ${util.roundDown(best * 100, 4)}% (APR ${util.roundDown(best * 100 * 365, 2)}%).`);
+        rateUpdates[symbol] = 0;
+    }
 
     // See if they have a webhook url defined
     if (!alertWebhook) {
