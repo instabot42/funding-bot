@@ -6,7 +6,8 @@
   "funding": [
     {
       "symbol": "btc",
-      "sleep": 5,
+      "sleep": 15,
+      "rounding": 5,
       "offers": [
         {
           "amount": 60,

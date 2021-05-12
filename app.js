@@ -67,7 +67,7 @@ async function sleep(s) {
  * @param {*} sleepSeconds
  * @returns
  */
-async function fundsAvailable(symbol, sleepSeconds) {
+async function fundsAvailable(symbol, sleepSeconds, rounding) {
     let available = null;
     while (available === null) {
         bfx.refreshAvailableFunds();
@@ -75,7 +75,7 @@ async function fundsAvailable(symbol, sleepSeconds) {
         available = bfx.fundsAvailable(symbol);
     }
 
-    return util.roundSignificantFigures(available, 4);
+    return util.roundDown(available, rounding);
 }
 
 /**
@@ -85,6 +85,7 @@ async function fundsAvailable(symbol, sleepSeconds) {
 async function rebalanceFunding(options) {
     try {
         const symbol = options.symbol;
+        const rounding = options.rounding;
 
         // Cancel existing offers
         logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
@@ -101,7 +102,7 @@ async function rebalanceFunding(options) {
         logger.progress('  waiting for balance to update...');
 
         // work out funds available
-        let available = await fundsAvailable(symbol, options.sleep);
+        let available = await fundsAvailable(symbol, options.sleep, rounding);
         if (available < options.minOrderSize) {
             logger.info(`  Not enough ${symbol} - ${available} available - skipping`);
             return;
@@ -125,7 +126,7 @@ async function rebalanceFunding(options) {
             } else {
                 // work out the order count, limited by min order size and available funds
                 const idealOrderCount = offer.orderCount;
-                const perOrder = util.roundDown(Math.max(allocatedFunds / idealOrderCount, offer.minOrderSize), 5);
+                const perOrder = util.roundDown(Math.max(allocatedFunds / idealOrderCount, offer.minOrderSize), rounding);
                 const orderCount = Math.floor(allocatedFunds / perOrder);
 
                 // figure out the range we'll offer into
@@ -135,7 +136,7 @@ async function rebalanceFunding(options) {
 
                 // progress update
                 logger.results(`Offer ${allocatedFunds} (had wanted to offer ${allocatedFundsDesired})`);
-                logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, 4)}`);
+                logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, rounding)}`);
                 logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
 
                 if (orderCount > 0) {
@@ -145,7 +146,7 @@ async function rebalanceFunding(options) {
                     logger.progress(`  Average Rate ${util.roundDown(averageRate * 100, 3)}%.`);
 
                     // Amounts, with randomisation
-                    const round = x => util.roundSignificantFigures(x, 4);
+                    const round = x => util.roundDown(x, rounding);
                     const amounts = scaledAmounts(orderCount, allocatedFunds, offer.minOrderSize, offer.randomAmountsPercent / 100, round);
 
                     // place the orders
