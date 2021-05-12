@@ -86,6 +86,8 @@ async function rebalanceFunding(options) {
     try {
         const symbol = options.symbol;
         const rounding = options.rounding;
+        const minDays = Math.max(2, options.minDays);
+        const maxDays = Math.min(120, options.maxDays);
 
         // Cancel existing offers
         logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
@@ -155,7 +157,7 @@ async function rebalanceFunding(options) {
                         await sleepMs(rateLimit);
 
                         // decide how long to make the offer for and submit it
-                        const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
+                        const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), minDays, maxDays);
                         bfx.newOffer(symbol, amounts[i], rate, days);
                         logger.progress(`    ${symbol}, ${amounts[i]} at ${util.roundDown(rate*100, 3)}% for ${days} days.`);
                         i += 1;
@@ -246,7 +248,12 @@ async function runBot() {
     // Work out how many ms to wait between each market getting started
     const delayBetweenMarkets = Math.floor(1000 * 60 * (waitMinutes / fundingMarkets.length));
     for (let i=0; i<fundingMarkets.length; i+=1) {
-        const options = fundingMarkets[i];
+        const options = {
+            rounding: 5,
+            minDays: 2,
+            maxDays: 30,
+            ...fundingMarkets[i]
+        };
 
         // Start off by setting up the funding for everything right away
         await rebalanceFunding(options);
