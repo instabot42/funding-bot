@@ -146,7 +146,7 @@ async function rebalanceFunding(options) {
 
                 // progress update
                 logger.results(`Offer ${allocatedFunds} (had wanted to offer ${allocatedFundsDesired} - ${offer.amount}%)`);
-                logger.results(`FRR: ${frr}. Best recent Rate: ${bestRate}.`);
+                logger.results(`FRR: ${util.roundDown(frr * 100, 3)}%. Best Rate: ${util.roundDown(bestRate * 100, 3)}%.`);
                 logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, rounding)}`);
                 logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
 
@@ -196,7 +196,7 @@ function trackRate(symbol, rate) {
     }
 
     // this rate better or the old one is too old, then replace it
-    const recent = moment().subtract(5, 'minutes');
+    const recent = moment().subtract(10, 'minutes');
     if (trackedRates[symbol].rate < rate || trackedRates[symbol].timestamp < recent) {
         trackedRates[symbol] = { rate, timestamp: moment() };
     }
@@ -229,7 +229,9 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
     }
     rateUpdates[symbol] += 1;
     if (rateUpdates[symbol] > 100) {
-        logger.results(`${symbol.toUpperCase()} rate: ${util.roundDown(newRate * 100, 4)}% (APR ${util.roundDown(newRate * 100 * 365, 2)}%)`);
+        const best = recentBestRate(symbol);
+        logger.results(`${symbol.toUpperCase()} Last Rate: ${util.roundDown(newRate * 100, 4)}% (APR ${util.roundDown(newRate * 100 * 365, 2)}%).`);
+        logger.results(`${symbol.toUpperCase()} Best Rate: ${util.roundDown(best * 100, 4)}% (APR ${util.roundDown(best * 100 * 365, 2)}%).`);
         rateUpdates[symbol] = 0;
     }
 
