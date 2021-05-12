@@ -135,7 +135,7 @@ async function rebalanceFunding(options) {
                 const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100);
 
                 // progress update
-                logger.results(`Offer ${allocatedFunds} (had wanted to offer ${allocatedFundsDesired})`);
+                logger.results(`Offer ${allocatedFunds} (had wanted to offer ${allocatedFundsDesired} - ${offer.amount}%)`);
                 logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, rounding)}`);
                 logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
 
@@ -157,7 +157,7 @@ async function rebalanceFunding(options) {
                         // decide how long to make the offer for and submit it
                         const days = duration(normaliseRate(rate, offer.lendingPeriodLow / 100, offer.lendingPeriodHigh / 100), 2, 30);
                         bfx.newOffer(symbol, amounts[i], rate, days);
-                        logger.progress(`    ${symbol}, ${amounts[i]} at ${rate*100}% for ${days} days.`);
+                        logger.progress(`    ${symbol}, ${amounts[i]} at ${util.roundDown(rate*100, 3)}% for ${days} days.`);
                         i += 1;
                     }
 
