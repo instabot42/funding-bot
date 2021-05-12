@@ -15,6 +15,7 @@ const symbols = fundingMarkets.map(item => item.symbol);
 const bfx = new Bitfinex(config.get('credentials.key'), config.get('credentials.secret'));
 
 const rateUpdates = {};
+const trackedRates = {};
 
 /**
  * return 0-1 offering the normalised position of a rate between 2 values
@@ -100,8 +101,15 @@ async function rebalanceFunding(options) {
             }
         }
 
+        // Find out the total funds
+        const totalFunds = bfx.fundsTotal(symbol);
+        if (util.roundDown(totalFunds, rounding) === 0) {
+            logger.results(`No funds allocated to ${symbol}. Skipping.`);
+            return;
+        }
+
         // wait for the dust to settle
-        logger.progress('  waiting for balance to update...');
+        logger.progress('  waiting for available balance to update...');
 
         // work out funds available
         let available = await fundsAvailable(symbol, options.sleep, rounding);
@@ -110,7 +118,6 @@ async function rebalanceFunding(options) {
             return;
         }
 
-        const totalFunds = bfx.fundsTotal(symbol);
         logger.info(`Total Funds: ${totalFunds}. Available: ${available}`);
 
         // Work out order sizes and count
@@ -133,11 +140,13 @@ async function rebalanceFunding(options) {
 
                 // figure out the range we'll offer into
                 const frr = bfx.frr(symbol);
-                const lowRate = Math.max(frr * offer.frrMultipleLow, offer.atLeastLow / 100);
-                const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100);
+                const bestRate = recentBestRate(symbol);
+                const lowRate = Math.max(frr * offer.frrMultipleLow, offer.atLeastLow / 100, bestRate * 0.99);
+                const highRate = Math.max(frr * offer.frrMultipleHigh, offer.atLeastHigh / 100, bestRate * 1.1);
 
                 // progress update
                 logger.results(`Offer ${allocatedFunds} (had wanted to offer ${allocatedFundsDesired} - ${offer.amount}%)`);
+                logger.results(`FRR: ${frr}. Best recent Rate: ${bestRate}.`);
                 logger.progress(`  Adding ${orderCount} orders, per order: ${perOrder}, total: ${util.roundDown(orderCount * perOrder, rounding)}`);
                 logger.progress(`  Rates from ${util.roundDown(lowRate * 100, 6)}% to ${util.roundDown(highRate * 100, 6)}% with ${offer.easing} scale.`);
 
@@ -176,6 +185,39 @@ async function rebalanceFunding(options) {
 }
 
 /**
+ *
+ * @param {*} symbol
+ * @param {*} rate
+ */
+function trackRate(symbol, rate) {
+    // No entry for this symbol, add one
+    if (trackedRates[symbol] === undefined) {
+        trackedRates[symbol] = { rate, timestamp: moment() };
+    }
+
+    // this rate better or the old one is too old, then replace it
+    const recent = moment().subtract(5, 'minutes');
+    if (trackedRates[symbol].rate < rate || trackedRates[symbol].timestamp < recent) {
+        trackedRates[symbol] = { rate, timestamp: moment() };
+    }
+}
+
+/**
+ *
+ * @param {*} symbol
+ * @returns
+ */
+function recentBestRate(symbol) {
+    // if there is no data, then the best rate was 0
+    if (trackedRates[symbol] === undefined) {
+        return 0;
+    }
+
+    // the last good rate we saw
+    return trackedRates[symbol].rate
+}
+
+/**
  * Called when there is a new high in the funding rate
  * @param symbol
  * @param oldRate
@@ -195,6 +237,8 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
     if (oldRate > newRate) {
         return;
     }
+
+    trackRate(symbol, newRate);
 
     // See if they have a webhook url defined
     if (!alertWebhook) {
@@ -245,6 +289,9 @@ async function runBot() {
     logger.results(`Refreshing funding positions every ${waitMinutes} minutes.`);
     logger.debug('waiting a few seconds for connection to stabilise before starting...');
 
+    // Listen out for funding rate highs
+    bfx.fundingRateChangedCallback(onFundingRateChanged);
+
     // Work out how many ms to wait between each market getting started
     const delayBetweenMarkets = Math.floor(1000 * 60 * (waitMinutes / fundingMarkets.length));
     for (let i=0; i<fundingMarkets.length; i+=1) {
@@ -273,9 +320,6 @@ async function runBot() {
     };
 
     logger.results(`All markets initial setup complete. First refresh in ${util.roundDown(delayBetweenMarkets/1000/60, 2)}m`);
-
-    // Listen out for funding rate highs
-    bfx.fundingRateChangedCallback(onFundingRateChanged);
 }
 
 /** ************************************************************ */
