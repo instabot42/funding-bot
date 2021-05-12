@@ -70,7 +70,7 @@ async function sleep(s) {
 async function fundsAvailable(symbol, sleepSeconds, rounding) {
     let available = null;
     while (available === null) {
-        bfx.refreshAvailableFunds();
+        bfx.refreshSymbolBalance(symbol);
         await sleep(sleepSeconds);
         available = bfx.fundsAvailable(symbol);
     }
@@ -91,7 +91,7 @@ async function rebalanceFunding(options) {
         logger.info(`Refreshing offers on ${symbol} at ${Date()}...`);
         const existingOffers = bfx.getAllOffers(symbol);
         if (existingOffers.length > 0) {
-            logger.progress('  Cancelling existing open offers');
+            logger.progress(`  Cancelling existing open offers (${existingOffers.length} orders)`);
             for (const offerId of existingOffers) {
                 await sleepMs(rateLimit);
                 bfx.cancelOffer(offerId);

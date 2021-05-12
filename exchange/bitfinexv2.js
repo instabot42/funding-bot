@@ -333,6 +333,14 @@ class BitfinexApiv2 {
     }
 
     /**
+     *
+     * @param {*} symbol
+     */
+    refreshSymbolBalance(symbol) {
+        this.ws.requestCalc([`wallet_funding_${symbol}`]);
+    }
+
+    /**
      * Called when we get a change to the wallet
      * @param wallet
      */
