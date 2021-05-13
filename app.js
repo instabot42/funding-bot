@@ -199,7 +199,6 @@ function trackRate(symbol, rate) {
     const recent = moment().subtract(10, 'minutes');
     if (trackedRates[symbol].rate < rate || trackedRates[symbol].timestamp < recent) {
         trackedRates[symbol] = { symbol, rate, timestamp: moment() };
-        logger.results(`${symbol} Best Rate: ${util.roundDown(rate * 100, 4)}% (APR ${util.roundDown(rate * 100 * 365, 2)}%).`);
     }
 }
 
