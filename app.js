@@ -199,6 +199,7 @@ function trackRate(symbol, rate) {
     const recent = moment().subtract(10, 'minutes');
     if (trackedRates[symbol].rate < rate || trackedRates[symbol].timestamp < recent) {
         trackedRates[symbol] = { rate, timestamp: moment() };
+        logger.results(`${symbol} Best Rate: ${util.roundDown(rate * 100, 4)}% (APR ${util.roundDown(rate * 100 * 365, 2)}%).`);
     }
 }
 
@@ -228,6 +229,7 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
         rateUpdates[symbol] = 0;
     }
     rateUpdates[symbol] += 1;
+    trackRate(symbol, newRate);
 
     // only interested in the rate going up...
     if (oldRate > newRate) {
@@ -235,11 +237,9 @@ function onFundingRateChanged(symbol, oldRate, newRate) {
     }
 
     // Show the rate (occasionally)
-    trackRate(symbol, newRate);
     if (rateUpdates[symbol] > 100) {
         const best = recentBestRate(symbol);
         logger.results(`${symbol.toUpperCase()} Last Rate: ${util.roundDown(newRate * 100, 4)}% (APR ${util.roundDown(newRate * 100 * 365, 2)}%).`);
-        logger.results(`${symbol.toUpperCase()} Best Rate: ${util.roundDown(best * 100, 4)}% (APR ${util.roundDown(best * 100 * 365, 2)}%).`);
         rateUpdates[symbol] = 0;
     }
 
