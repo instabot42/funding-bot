@@ -15,7 +15,7 @@ const symbols = fundingMarkets.map(item => item.symbol);
 const bfx = new Bitfinex(config.get('credentials.key'), config.get('credentials.secret'));
 
 const rateUpdates = {};
-const trackedRates = {};
+const trackedRates = [];
 
 /**
  * return 0-1 offering the normalised position of a rate between 2 values
@@ -190,15 +190,18 @@ async function rebalanceFunding(options) {
  * @param {*} rate
  */
 function trackRate(symbol, rate) {
-    // No entry for this symbol, add one
-    if (trackedRates[symbol] === undefined) {
-        trackedRates[symbol] = { symbol, rate, timestamp: moment() };
+    const index = trackedRates.findIndex(item => item.symbol === symbol);
+    if (index < 0) {
+        // No entry for this symbol, add one
+        trackedRates.push({ symbol, rate, timestamp: moment() });
+        return;
     }
 
     // this rate better or the old one is too old, then replace it
     const recent = moment().subtract(10, 'minutes');
-    if (trackedRates[symbol].rate < rate || trackedRates[symbol].timestamp < recent) {
-        trackedRates[symbol] = { symbol, rate, timestamp: moment() };
+    if (trackedRates[index].rate < rate || trackedRates[index].timestamp < recent) {
+        trackedRates = trackedRates.filter(item => item.symbol !== symbol);
+        trackedRates.push({ symbol, rate, timestamp: moment() });
     }
 }
 
@@ -208,19 +211,20 @@ function trackRate(symbol, rate) {
  * @returns
  */
 function recentBestRate(symbol) {
-    // if there is no data, then the best rate was 0
-    if (trackedRates[symbol] === undefined) {
+    const index = trackedRates.findIndex(item => item.symbol === symbol);
+    if (index < 0) {
         return 0;
     }
 
     // the last good rate we saw
-    return trackedRates[symbol].rate
+    return trackedRates[index].rate
 }
 
+/**
+ *
+ */
 function reportBestRates() {
-    for (const item in trackedRates) {
-        logger.info(`${item.symbol} Best Rate: ${util.roundDown(item.rate * 100, 4)}% (APR ${util.roundDown(item.rate * 100 * 365, 2)}%).`);
-    }
+    trackedRates.forEach((item) => logger.info(`${item.symbol} Best Rate: ${util.roundDown(item.rate * 100, 4)}% (APR ${util.roundDown(item.rate * 100 * 365, 2)}%).`));
 }
 
 /**
