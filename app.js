@@ -15,7 +15,7 @@ const symbols = fundingMarkets.map(item => item.symbol);
 const bfx = new Bitfinex(config.get('credentials.key'), config.get('credentials.secret'));
 
 const rateUpdates = {};
-const trackedRates = [];
+let trackedRates = [];
 
 /**
  * return 0-1 offering the normalised position of a rate between 2 values
