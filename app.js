@@ -192,13 +192,13 @@ async function rebalanceFunding(options) {
 function trackRate(symbol, rate) {
     // No entry for this symbol, add one
     if (trackedRates[symbol] === undefined) {
-        trackedRates[symbol] = { rate, timestamp: moment() };
+        trackedRates[symbol] = { symbol, rate, timestamp: moment() };
     }
 
     // this rate better or the old one is too old, then replace it
     const recent = moment().subtract(10, 'minutes');
     if (trackedRates[symbol].rate < rate || trackedRates[symbol].timestamp < recent) {
-        trackedRates[symbol] = { rate, timestamp: moment() };
+        trackedRates[symbol] = { symbol, rate, timestamp: moment() };
         logger.results(`${symbol} Best Rate: ${util.roundDown(rate * 100, 4)}% (APR ${util.roundDown(rate * 100 * 365, 2)}%).`);
     }
 }
@@ -216,6 +216,12 @@ function recentBestRate(symbol) {
 
     // the last good rate we saw
     return trackedRates[symbol].rate
+}
+
+function reportBestRates() {
+    for (const item in trackedRates) {
+        logger.info(`${item.symbol} Best Rate: ${util.roundDown(item.rate * 100, 4)}% (APR ${util.roundDown(item.rate * 100 * 365, 2)}%).`);
+    }
 }
 
 /**
@@ -294,6 +300,7 @@ async function runBot() {
 
     // Listen out for funding rate highs
     bfx.fundingRateChangedCallback(onFundingRateChanged);
+    setInterval(() => reportBestRates(), 1000 * 60 * 3);
 
     // Work out how many ms to wait between each market getting started
     const delayBetweenMarkets = Math.floor(1000 * 60 * (waitMinutes / fundingMarkets.length));
