@@ -21,7 +21,7 @@
     "bitfinex-api-node": "^2.0.10",
     "body-parser": "^1.19.0",
     "config": "^2.0.1",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "request": "^2.88.2",
     "terminal-kit": "^1.49.3"
   },
