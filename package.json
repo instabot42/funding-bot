@@ -17,7 +17,7 @@
     "setup": "cp -n config/default.json config/local.json || true"
   },
   "dependencies": {
-    "bfx-api-node-models": "^1.2.5",
+    "bfx-api-node-models": "^1.6.3",
     "bitfinex-api-node": "^2.0.10",
     "body-parser": "^1.19.0",
     "config": "^3.3.9",
