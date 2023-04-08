@@ -224,7 +224,8 @@ function recentBestRate(symbol) {
  *
  */
 function reportBestRates() {
-    trackedRates.forEach((item) => logger.info(`${item.symbol} Best Rate: ${util.roundDown(item.rate * 100, 4)}% (APR ${util.roundDown(item.rate * 100 * 365, 2)}%).`));
+    logger.info('Recent Best Rates:-');
+    trackedRates.forEach((item) => logger.info(`  ${item.symbol} : ${util.roundDown(item.rate * 100, 4)}% (APR ${util.roundDown(item.rate * 100 * 365, 2)}%).`));
 }
 
 /**
