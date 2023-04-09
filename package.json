@@ -23,7 +23,7 @@
     "config": "^3.3.9",
     "moment": "^2.29.4",
     "request": "^2.88.2",
-    "terminal-kit": "^2.1.8"
+    "terminal-kit": "^3.0.0"
   },
   "devDependencies": {
     "eslint": "^8.38.0",
